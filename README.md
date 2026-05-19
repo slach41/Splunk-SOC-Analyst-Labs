@@ -47,3 +47,56 @@ By timeline-correlating the events captured in the SIEM platform, a clear chain 
 - **Next Steps (Triage Workflow):** - Verify if the external IP (`185.220.101.4`) belongs to an authorized VPN/employee or a known malicious network (e.g., Tor exit node).
   - Inspect the specific command-line arguments passed to `powershell.exe` to check for malicious scripts or encoded commands.
   - Isolate the host system if malicious intent is confirmed to prevent further lateral movement.
+
+
+
+---
+
+## 📂 Lab 2: Endpoint Security Auditing Via Windows Event Viewer
+
+### 🔍 Incident Overview
+- **Objective:** Analyze raw Windows Security Event Logs directly from the endpoint to trace authentication anomalies and identify host-level Indicators of Compromise (IoCs).
+- **Platform/Tools:** Windows Event Viewer (`eventvwr.msc`), Windows Security Log Auditing.
+- **Key Event IDs Investigated:**
+  - `4625` (Audit Failure - Failed Logon Attempt)
+  - `4624` (Audit Success - Successful Logon)
+  - `4688` (Audit Success - A New Process Has Been Created)
+
+---
+
+### 🛠️ Host-Level Log Triage Workflow
+
+When investigating potential host compromises directly on the endpoint, analyzing the raw properties of Windows Security Events is crucial for determining the timeline of an attack:
+
+1. **Analyzing Authentication Failures (`Event ID 4625`):**
+   Inspected failed logon logs to check the subject security ID and logon type. High-frequency generation of Event 4625 helps isolate brute-force or credential-stuffing attempts targeting specific machine accounts.
+
+2. **Verifying Logon Success (`Event ID 4624`):**
+   Correlated the exact timestamp of failed attempts with subsequent successful logons. Confirming an `Audit Success` right after multiple failures indicates a potentially compromised account.
+
+3. **Auditing Post-Exploitation Activity (`Event ID 4688`):**
+   Tracked new process creations immediately following successful sessions. Auditing the target system logs for spawned processes (such as native utilities like `Splunkd` auditing infrastructure or potential living-off-the-land binaries) provides insight into what the execution context did post-auth.
+
+---
+
+### 📊 Proof of Work (Event Properties)
+
+*Below are the raw event properties captured directly from the Windows Security Log during auditing practice:*
+
+#### ❌ Event 4625: Audit Failure - An account failed to log on
+<img width="922" height="649" alt="2" src="https://github.com/user-attachments/assets/6d653e41-d3a8-4d27-85b1-93420f6e620d" />
+
+
+####  Event 4624: Audit Success - An account was successfully logged on
+<img width="926" height="645" alt="3" src="https://github.com/user-attachments/assets/2ec1ff42-3bc1-4246-a5b9-b207eca840c7" />
+
+
+#### ⚙️ Event 4688: Audit Success - A new process has been created
+<img width="924" height="646" alt="4" src="https://github.com/user-attachments/assets/df14a34f-86cf-4df4-b76e-20dbbbf7c344" />
+
+
+---
+
+### 🎯 Analyst Takeaway & Core Skillset
+- **Host vs. Network Analysis:** Mastering raw Windows event properties allows a SOC analyst to perform deep-dive forensics directly on endpoints when remote SIEM collectors are blind or when validating alerting logic validity.
+- **Correlation:** Knowing how to pivot from a raw Windows Event log to a Splunk SPL query is a foundational capability for effective Tier 1 alert triage.
